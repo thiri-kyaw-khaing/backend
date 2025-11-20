@@ -6,6 +6,7 @@ import compression from "compression";
 import { limiter } from "./middlewares/rateLimiter";
 import { check } from "./middlewares/check";
 import { Request, Response } from "express";
+import authRouter from "./routes/v1/auth";
 import healthRouter from "./routes/v1/health";
 const app = express();
 
@@ -19,6 +20,7 @@ app
   .use(limiter);
 
 app.use("/api/v1", healthRouter);
+app.use("/api/v1", authRouter);
 
 app.use((error: any, req: Request, res: Response, next: any) => {
   const status = error.status || 500;
