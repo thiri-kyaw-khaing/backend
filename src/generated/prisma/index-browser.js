@@ -207,7 +207,17 @@ exports.Prisma.OtpScalarFieldEnum = {
   count: 'count',
   error: 'error',
   createdAt: 'createdAt',
-  expiresAt: 'expiresAt'
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PostTagScalarFieldEnum = {
+  id: 'id',
+  name: 'name'
+};
+
+exports.Prisma.ProductTagScalarFieldEnum = {
+  id: 'id',
+  name: 'name'
 };
 
 exports.Prisma.SortOrder = {
@@ -244,7 +254,9 @@ exports.Prisma.ModelName = {
   ProductsOnOrders: 'ProductsOnOrders',
   Post: 'Post',
   User: 'User',
-  Otp: 'Otp'
+  Otp: 'Otp',
+  PostTag: 'PostTag',
+  ProductTag: 'ProductTag'
 };
 
 /**
