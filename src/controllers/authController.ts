@@ -9,6 +9,7 @@ import {
   getOtpByPhone,
   getUserByPhone,
   updateOtp,
+  updateUser,
 } from "../services/auth";
 import {
   checkOtpErrorIfSameDate,
@@ -274,8 +275,30 @@ export const confirmPassword = [
       phone: phone,
     };
     const newUser = await createUser(userData);
+    const accessTokenPayload = { id: newUser.id };
+    const refreshTokenPayload = { id: newUser.id, phone: newUser.phone };
+    const accessToken = jwt.sign(
+      accessTokenPayload,
+      process.env.ACCESS_TOKEN_SECRET!,
+      { expiresIn: "15m" }
+    );
+    const refreshToken = jwt.sign(
+      refreshTokenPayload,
+      process.env.REFRESH_TOKEN_SECRET!,
+      { expiresIn: "30d" }
+    );
 
-    res.status(200).json({ message: "Password confirmed successfully" });
+    const updateUserData = {
+      randtoken: refreshToken,
+    };
+    await updateUser(newUser.id, updateUserData);
+
+    res.status(201).json({
+      message: "Successfully created an account",
+      userId: newUser.id,
+      accessToken,
+      refreshToken,
+    });
   },
 ];
 
