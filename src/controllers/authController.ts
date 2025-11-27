@@ -80,7 +80,7 @@ export const register = [
           error: 0,
         };
         try {
-          result = await updateOtp(otpRow.id, otpData);
+          await updateOtp(otpRow.id, otpData);
         } catch (error) {
           console.log("Error updating OTP:", error);
         }
@@ -101,7 +101,7 @@ export const register = [
           };
           // result = await updateOtp(otpRow.id, otpData);
           try {
-            result = await updateOtp(otpRow.id, otpData);
+            await updateOtp(otpRow.id, otpData);
           } catch (error) {
             console.log("Error updating OTP:", error);
           }
@@ -176,13 +176,13 @@ export const verifyOtp = [
         const otpData = {
           error: 1,
         };
-        result = await updateOtp(otpRow!.id, otpData);
+        await updateOtp(otpRow!.id, otpData);
       } else {
         //if otp not match,and in same date
         const otpData = {
           error: { increment: 1 },
         };
-        result = await updateOtp(otpRow!.id, otpData);
+        await updateOtp(otpRow!.id, otpData);
       }
     }
     //All OK
@@ -201,7 +201,7 @@ export const verifyOtp = [
   },
 ];
 
-export const comfirmPassword = (
+export const confirmPassword = (
   req: Request,
   res: Response,
   next: NextFunction
