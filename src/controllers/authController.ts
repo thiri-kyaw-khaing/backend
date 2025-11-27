@@ -201,14 +201,33 @@ export const verifyOtp = [
   },
 ];
 
-export const confirmPassword = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  // Password confirmation logic here
-  res.status(200).json({ message: "Password confirmed successfully" });
-};
+export const confirmPassword = [
+  body("phone", "Phone number is not valid")
+    .trim()
+    .notEmpty()
+    .matches("^[0-9]+$")
+    .isLength({ min: 5, max: 12 })
+    .withMessage("Phone number must be between 5 to 12 digits"),
+  body("password", "Password is not valid")
+    .trim()
+    .notEmpty()
+    .matches("^[0-9]+$")
+    .isLength({ min: 8, max: 8 })
+    .withMessage("Password must be 8 digits"),
+  body("token", "Token is required").notEmpty().escape(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    // Password confirmation logic here
+    const errors = validationResult(req).array({ onlyFirstError: true });
+    //if vlidation error occurs
+    if (errors.length > 0) {
+      const error: any = new Error(errors[0].msg);
+      error.status = 400;
+      error.code = "Error_Invalid";
+      return next(error);
+    }
+    res.status(200).json({ message: "Password confirmed successfully" });
+  },
+];
 
 export const login = (req: Request, res: Response, next: NextFunction) => {
   // Login logic here
