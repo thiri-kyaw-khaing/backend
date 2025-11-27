@@ -2,8 +2,10 @@ import { NextFunction, Request, Response } from "express";
 import { body, check, validationResult } from "express-validator";
 import bcrypt from "bcrypt";
 import { get } from "http";
+import jwt from "jsonwebtoken";
 import {
   createOtp,
+  createUser,
   getOtpByPhone,
   getUserByPhone,
   updateOtp,
@@ -231,7 +233,7 @@ export const confirmPassword = [
     checkUserExists(user);
     const otpRow = await getOtpByPhone(phone);
     checkOtpExists(otpRow);
-
+    //otp error count is over limit
     if (otpRow!.error === 5) {
       const error: any = new Error(
         "Too many failed attempts. Please request OTP again."
@@ -240,7 +242,7 @@ export const confirmPassword = [
       error.code = "Error_Too_Many_Attempts";
       return next(error);
     }
-
+    //if token is wrong
     if (otpRow!.verifyToken !== token) {
       const otpData = {
         error: 5,
@@ -251,6 +253,28 @@ export const confirmPassword = [
       error.code = "Error_Invalid_Token";
       return next(error);
     }
+
+    // if requests is expired
+    const isExpired = moment().diff(moment(otpRow!.updatedAt), "minutes") > 10;
+    if (isExpired) {
+      const error: any = new Error(
+        "Request has expired. Please verify OTP again."
+      );
+      error.status = 403;
+      error.code = "Error_Request_Expired";
+      return next(error);
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password.toString(), salt);
+    const randtoken = "I will replace later";
+
+    const userData = {
+      password: hashedPassword,
+      randToken: randtoken,
+      phone: phone,
+    };
+    const newUser = await createUser(userData);
+
     res.status(200).json({ message: "Password confirmed successfully" });
   },
 ];
