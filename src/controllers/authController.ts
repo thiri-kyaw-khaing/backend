@@ -225,6 +225,32 @@ export const confirmPassword = [
       error.code = "Error_Invalid";
       return next(error);
     }
+
+    const { phone, password, token } = req.body;
+    const user = await getUserByPhone(phone);
+    checkUserExists(user);
+    const otpRow = await getOtpByPhone(phone);
+    checkOtpExists(otpRow);
+
+    if (otpRow!.error === 5) {
+      const error: any = new Error(
+        "Too many failed attempts. Please request OTP again."
+      );
+      error.status = 429;
+      error.code = "Error_Too_Many_Attempts";
+      return next(error);
+    }
+
+    if (otpRow!.verifyToken !== token) {
+      const otpData = {
+        error: 5,
+      };
+      await updateOtp(otpRow!.id, otpData);
+      const error: any = new Error("Invalid token provided");
+      error.status = 400;
+      error.code = "Error_Invalid_Token";
+      return next(error);
+    }
     res.status(200).json({ message: "Password confirmed successfully" });
   },
 ];
