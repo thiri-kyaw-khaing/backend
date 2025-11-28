@@ -351,7 +351,19 @@ export const login = [
       error.code = "Error_Account_Frozen";
       return next(error);
     }
-
+    const isMatchPassword = await bcrypt.compare(password, user!.password);
+    if (!isMatchPassword) {
+      //Start to record wrong times
+      const lastRequest = new Date(user!.updatedAt).toLocaleString();
+      const isSameDate = lastRequest === new Date().toLocaleString();
+      //if not same date, reset wrong count to 1]
+      if (!isSameDate) {
+        const userData = {
+          errorLoginCount: 1,
+        };
+        await updateUser(user!.id, userData);
+      }
+    }
     res.status(200).json({ message: "User logged in successfully" });
   },
 ];
