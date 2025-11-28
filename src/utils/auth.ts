@@ -34,3 +34,12 @@ export const checkOtpErrorIfSameDate = (isSameDate: boolean, error: number) => {
     throw error;
   }
 };
+
+export const checkUserIfNotExists = async (user: any) => {
+  if (!user) {
+    const error: any = new Error("User does not exist");
+    error.status = 404;
+    error.code = "Error_User_Not_Found";
+    throw error;
+  }
+};
