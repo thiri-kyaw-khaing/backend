@@ -293,12 +293,24 @@ export const confirmPassword = [
     };
     await updateUser(newUser.id, updateUserData);
 
-    res.status(201).json({
-      message: "Successfully created an account",
-      userId: newUser.id,
-      accessToken,
-      refreshToken,
-    });
+    res
+      .cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      })
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      })
+      .status(201)
+      .json({
+        message: "Successfully created an account",
+        userId: newUser.id,
+      });
   },
 ];
 
