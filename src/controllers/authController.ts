@@ -22,6 +22,7 @@ import {
 import moment from "moment";
 import { verify } from "crypto";
 import { error } from "console";
+import { stat } from "fs";
 
 export const register = [
   body("phone", "Phone number is not valid")
@@ -46,6 +47,8 @@ export const register = [
     if (phone.slice(0, 2) === "09") {
       phone = phone.substring(2, phone.length);
     } //123456789
+    console.log("Processed phone:", phone);
+    console.log("typeof phone", typeof phone);
     const user = await getUserByPhone(phone);
     console.log("user", user);
     await checkUserExists(user);
@@ -60,6 +63,7 @@ export const register = [
     const token = generateToken();
 
     const otpRow = await getOtpByPhone(phone);
+    console.log("otpRow", otpRow);
     let result: any;
     //never request otp before
     if (!otpRow) {
@@ -84,7 +88,7 @@ export const register = [
           error: 0,
         };
         try {
-          await updateOtp(otpRow.id, otpData);
+          result = await updateOtp(otpRow.id, otpData);
         } catch (error) {
           console.log("Error updating OTP:", error);
         }
@@ -105,7 +109,7 @@ export const register = [
           };
           // result = await updateOtp(otpRow.id, otpData);
           try {
-            await updateOtp(otpRow.id, otpData);
+            result = await updateOtp(otpRow.id, otpData);
           } catch (error) {
             console.log("Error updating OTP:", error);
           }
@@ -356,14 +360,68 @@ export const login = [
       //Start to record wrong times
       const lastRequest = new Date(user!.updatedAt).toLocaleString();
       const isSameDate = lastRequest === new Date().toLocaleString();
-      //if not same date, reset wrong count to 1]
+      //if not same date(password wrong for just today), reset wrong count to 1]
       if (!isSameDate) {
         const userData = {
           errorLoginCount: 1,
         };
         await updateUser(user!.id, userData);
+      } else {
+        //if password is wrong same date over 2 times, increment wrong count
+        if (user!.errorLoginCount >= 2) {
+          const userData = {
+            status: "FREEZE",
+          };
+          await updateUser(user!.id, userData);
+        } else {
+          const userData = {
+            errorLoginCount: { increment: 1 },
+          };
+          await updateUser(user!.id, userData);
+        }
+        ///End of recording wrong times
       }
+      const error: any = new Error("Incorrect password");
+      error.status = 400;
+      error.code = "Error_Invalid";
+      return next(error);
     }
-    res.status(200).json({ message: "User logged in successfully" });
+
+    //All OK(authorization token)
+    const accessTokenPayload = { id: user!.id };
+    const refreshTokenPayload = { id: user!.id, phone: user!.phone };
+    const accessToken = jwt.sign(
+      accessTokenPayload,
+      process.env.ACCESS_TOKEN_SECRET!,
+      { expiresIn: "15m" }
+    );
+    const refreshToken = jwt.sign(
+      refreshTokenPayload,
+      process.env.REFRESH_TOKEN_SECRET!,
+      { expiresIn: "30d" }
+    );
+
+    const updateUserData = {
+      randtoken: refreshToken,
+      errorLoginCount: 0, //reset error login count
+      status: "ACTIVE",
+    };
+    await updateUser(user!.id, updateUserData);
+
+    res
+      .cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      })
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      })
+      .status(200)
+      .json({ message: "User logged in successfully", userId: user!.id });
   },
 ];

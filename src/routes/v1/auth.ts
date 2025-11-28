@@ -1,6 +1,6 @@
 import express from "express";
 import {
-  comfirmPassword,
+  confirmPassword,
   login,
   register,
   verifyOtp,
@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.post("/register", register);
 router.post("/verify-otp", verifyOtp);
-router.post("/comfirm-password", comfirmPassword);
+router.post("/confirm-password", confirmPassword);
 router.post("/login", login);
 
 export default router;
