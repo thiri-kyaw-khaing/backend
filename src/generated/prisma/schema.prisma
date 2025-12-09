@@ -111,7 +111,7 @@ model User {
   lastName        String?   @db.VarChar(52)
   phone           String    @unique @db.VarChar(15)
   password        String
-  email           String    @unique @db.VarChar(52)
+  email           String?   @unique @db.VarChar(52)
   role            Role      @default(USER)
   status          Status    @default(ACTIVE)
   lastLogin       DateTime?

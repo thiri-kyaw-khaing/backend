@@ -72,7 +72,7 @@ export const register = [
         otp: hashedOtp,
         rememberToken: token,
       };
-      const result = await createOtp(otpData);
+      result = await createOtp(otpData);
     } else {
       //if requested before, check the date
       const lastOtpRequest = new Date(otpRow.updatedAt).toLocaleString();
@@ -165,12 +165,14 @@ export const verifyOtp = [
         error: 5,
       };
       result = await updateOtp(otpRow!.id, otpData);
+
       const error: any = new Error("Invalid token provided");
       error.status = 400;
       error.code = "Error_Invalid_Token";
       return next(error);
     }
-    const isExpired = moment().diff(moment(otpRow!.updatedAt), "minutes") > 2;
+    const isExpired = moment().diff(otpRow!.updatedAt, "minutes") > 2;
+
     if (isExpired) {
       const error: any = new Error("OTP has expired");
       error.status = 400;
@@ -198,13 +200,13 @@ export const verifyOtp = [
     const otpData = {
       error: 0,
       count: 1,
-      token: verifyToken,
+      verifyToken: verifyToken,
     };
     result = await updateOtp(otpRow!.id, otpData);
     res.status(200).json({
       message: "OTP verified successfully",
       phone: result.phone,
-      token: result.verifyToken,
+      verifyToken: result.verifyToken,
     });
   },
 ];
@@ -294,7 +296,7 @@ export const confirmPassword = [
     );
 
     const updateUserData = {
-      randtoken: refreshToken,
+      randToken: refreshToken,
     };
     await updateUser(newUser.id, updateUserData);
 
