@@ -345,7 +345,12 @@ export const login = [
       return next(error);
     }
 
-    const { phone, password } = req.body;
+    const password = req.body.password;
+    let phone = req.body.phone;
+    if (phone.slice(0, 2) === "09") {
+      phone = phone.substring(2, phone.length);
+    }
+
     const user = await getUserByPhone(phone);
     checkUserIfNotExists(user);
     //if password is incorrect over limit
@@ -404,7 +409,7 @@ export const login = [
     );
 
     const updateUserData = {
-      randtoken: refreshToken,
+      randToken: refreshToken,
       errorLoginCount: 0, //reset error login count
       status: "ACTIVE",
     };
