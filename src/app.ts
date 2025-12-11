@@ -8,6 +8,7 @@ import { check } from "./middlewares/check";
 import { Request, Response } from "express";
 import authRouter from "./routes/v1/auth";
 import healthRouter from "./routes/v1/health";
+import userRouter from "./routes/v1/admin/user";
 const app = express();
 
 app
@@ -21,6 +22,7 @@ app
 
 app.use("/api/v1", healthRouter);
 app.use("/api/v1", authRouter);
+app.use("/api/v1/admin", userRouter);
 
 app.use((error: any, req: Request, res: Response, next: any) => {
   const status = error.status || 500;
