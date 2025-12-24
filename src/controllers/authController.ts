@@ -7,6 +7,7 @@ import {
   createOtp,
   createUser,
   getOtpByPhone,
+  getUserById,
   getUserByPhone,
   updateOtp,
   updateUser,
@@ -432,3 +433,67 @@ export const login = [
       .json({ message: "User logged in successfully", userId: user!.id });
   },
 ];
+
+export const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const refreshToken = req.cookies ? req.cookies.refreshToken : null;
+  if (!refreshToken) {
+    const error: any = new Error("Invalid token provided");
+    error.status = 400;
+    error.code = "Error_Invalid_Token";
+    return next(error);
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as {
+      id: number;
+      phone: string;
+    };
+  } catch (err) {
+    const error: any = new Error("Invalid  provided");
+    error.status = 400;
+    error.code = "Error_Invalid_Token";
+    return next(error);
+  }
+
+  if (isNaN(decoded.id)) {
+    const error: any = new Error(" token provided");
+    error.status = 400;
+    error.code = "Error_Invalid_Token";
+    return next(error);
+  }
+
+  const user = await getUserById(decoded.id);
+  checkUserIfNotExists(user);
+
+  if (user!.phone !== decoded.phone) {
+    const error: any = new Error("provided");
+    error.status = 400;
+    error.code = "Error_Invalid_Token";
+    return next(error);
+  }
+
+  const userData = {
+    randToken: generateToken(),
+  };
+  await updateUser(user!.id, userData);
+
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+    path: "/",
+  });
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+    path: "/",
+  });
+
+  res.status(200).json({ message: "Successfully logged out. See you soon." });
+};

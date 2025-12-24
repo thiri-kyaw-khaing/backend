@@ -3,6 +3,7 @@ import morgan from "morgan";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import { limiter } from "./middlewares/rateLimiter";
 import { check } from "./middlewares/check";
 import { Request, Response } from "express";
@@ -14,6 +15,7 @@ const app = express();
 app
   .use(morgan("dev"))
   .use(express.json())
+  .use(cookieParser())
   .use(express.urlencoded({ extended: true }))
   .use(cors())
   .use(helmet())
