@@ -9,5 +9,5 @@ export const getAllUsers = (
   res: Response,
   next: NextFunction
 ) => {
-  res.status(200).json({ message: "All Users" });
+  res.status(200).json({ message: req.t("welcome") });
 };
