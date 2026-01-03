@@ -1,3 +1,4 @@
 {
-  "welcome": "Welcome to our application in mm"
+  "welcome": "Welcome to our application in mm",
+  "changeLan": "Language changed successfully in mm- {{lang}}."
 }

@@ -10,6 +10,7 @@ import { Request, Response } from "express";
 import authRouter from "./routes/v1/auth";
 import healthRouter from "./routes/v1/health";
 import userRouter from "./routes/v1/admin/user";
+import profileRouter from "./routes/v1/api/user";
 import i18next from "i18next";
 import Backend from "i18next-fs-backend";
 import middleware from "i18next-http-middleware";
@@ -67,6 +68,7 @@ app.use(middleware.handle(i18next));
 app.use("/api/v1", healthRouter);
 app.use("/api/v1", authRouter);
 app.use("/api/v1/admin", userRouter);
+app.use("/api/v1/", profileRouter);
 
 app.use((error: any, req: Request, res: Response, next: any) => {
   const status = error.status || 500;
