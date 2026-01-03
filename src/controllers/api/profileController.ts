@@ -23,5 +23,6 @@ export const changeLanguage = [
 
     const { lang } = req.query;
     res.cookie("i18next", lang);
+    res.status(200).json({ message: req.t("changeLan", { lang }) });
   },
 ];

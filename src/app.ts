@@ -68,7 +68,7 @@ app.use(middleware.handle(i18next));
 app.use("/api/v1", healthRouter);
 app.use("/api/v1", authRouter);
 app.use("/api/v1/admin", userRouter);
-app.use("/api/v1/", profileRouter);
+app.use("/api/v1", profileRouter);
 
 app.use((error: any, req: Request, res: Response, next: any) => {
   const status = error.status || 500;
