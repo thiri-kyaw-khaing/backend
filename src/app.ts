@@ -13,6 +13,7 @@ import userRouter from "./routes/v1/admin/user";
 import i18next from "i18next";
 import Backend from "i18next-fs-backend";
 import middleware from "i18next-http-middleware";
+import path from "path";
 const app = express();
 
 var whitelist = ["http://example1.com", "http://localhost:5173"];
@@ -42,7 +43,26 @@ app
   .use(compression())
   .use(limiter);
 
-i18next.use(Backend).use(middleware.LanguageDetector).init({});
+i18next
+  .use(Backend)
+  .use(middleware.LanguageDetector)
+  .init({
+    backend: {
+      loadPath: path.join(
+        process.cwd(),
+        "src/locales",
+        "{{lng}}",
+        "{{ns}}.json"
+      ),
+    },
+    detection: {
+      order: ["querystring", "cookie"],
+      caches: ["cookie"],
+    },
+    fallbackLng: "en",
+    preload: ["en", "mm"],
+  });
+app.use(middleware.handle(i18next));
 
 app.use("/api/v1", healthRouter);
 app.use("/api/v1", authRouter);
