@@ -15,6 +15,8 @@ import i18next from "i18next";
 import Backend from "i18next-fs-backend";
 import middleware from "i18next-http-middleware";
 import path from "path";
+import { authorise } from "./middlewares/authorise";
+import { auth } from "./middlewares/auth";
 const app = express();
 
 var whitelist = ["http://example1.com", "http://localhost:5173"];
@@ -67,7 +69,7 @@ app.use(middleware.handle(i18next));
 
 app.use("/api/v1", healthRouter);
 app.use("/api/v1", authRouter);
-app.use("/api/v1/admin", userRouter);
+app.use("/api/v1/admin", auth, authorise(true, "ADMIN"), userRouter);
 app.use("/api/v1", profileRouter);
 
 app.use((error: any, req: Request, res: Response, next: any) => {
