@@ -24,6 +24,7 @@ import moment from "moment";
 import { verify } from "crypto";
 import { error } from "console";
 import { stat } from "fs";
+import { errorCode } from "../config/errorCode";
 
 export const register = [
   body("phone", "Phone number is not valid")
@@ -48,10 +49,8 @@ export const register = [
     if (phone.slice(0, 2) === "09") {
       phone = phone.substring(2, phone.length);
     } //123456789
-    console.log("Processed phone:", phone);
-    console.log("typeof phone", typeof phone);
+
     const user = await getUserByPhone(phone);
-    console.log("user", user);
     await checkUserExists(user);
     //OTP sending logic here
     //Generate OTP and call external service to send OTP
@@ -64,7 +63,7 @@ export const register = [
     const token = generateToken();
 
     const otpRow = await getOtpByPhone(phone);
-    console.log("otpRow", otpRow);
+
     let result: any;
     //never request otp before
     if (!otpRow) {
@@ -497,3 +496,75 @@ export const logout = async (
 
   res.status(200).json({ message: "Successfully logged out. See you soon." });
 };
+
+export const forgetPassword = [
+  body("phone", "Phone number is not valid")
+    .trim()
+    .notEmpty()
+    .matches("^[0-9]+$")
+    .isLength({ min: 5, max: 12 })
+    .withMessage("Phone number must be between 5 to 12 digits"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    // Registration logic here
+    const errors = validationResult(req).array({ onlyFirstError: true });
+    //if vlidation error occurs
+    if (errors.length > 0) {
+      const error: any = new Error(errors[0].msg);
+      error.status = 400;
+      error.code = "Error_Invalid";
+      return next(error);
+    }
+    let phone = req.body.phone; //09123456789
+    if (phone.slice(0, 2) === "09") {
+      phone = phone.substring(2, phone.length);
+    } //123456789
+    const user = await getUserByPhone(phone);
+    checkUserIfNotExists(user);
+
+    const otp = 123456; //for testing purpose
+    const salt = await bcrypt.genSalt(10);
+    const hashedOtp = await bcrypt.hash(otp.toString(), salt);
+    const token = generateToken();
+
+    const otpRow = await getOtpByPhone(phone);
+    let result;
+
+    const lastOtpRequest = new Date(otpRow!.updatedAt).toLocaleDateString();
+    const today = new Date().toLocaleDateString();
+    const isSameDate = lastOtpRequest === today;
+    checkOtpErrorIfSameDate(isSameDate, otpRow!.error);
+    // If OTP request is not in the same date
+    if (!isSameDate) {
+      const otpData = {
+        otp: hashedOtp,
+        rememberToken: token,
+        count: 1,
+        error: 0,
+      };
+      result = await updateOtp(otpRow!.id, otpData);
+    } else {
+      // If OTP request is in the same date and over limit
+      if (otpRow!.count === 3) {
+        const error: any = new Error(
+          "OTP is allowed to request 3 times per day"
+        );
+        error.status = 429;
+        error.code = "Error_OTP_Limit_Reached";
+        return next(error);
+      } else {
+        // If OTP request is in the same date but not over limit
+        const otpData = {
+          otp: hashedOtp,
+          rememberToken: token,
+          count: otpRow!.count + 1,
+        };
+        result = await updateOtp(otpRow!.id, otpData);
+      }
+    }
+    res.status(200).json({
+      message: `We are sending OTP to 09${result.phone} to reset password.`,
+      phone: result.phone,
+      token: result.rememberToken,
+    });
+  },
+];

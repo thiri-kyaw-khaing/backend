@@ -14,4 +14,6 @@ router.post("/confirm-password", confirmPassword);
 router.post("/login", login);
 router.post("/logout", logout);
 
+router.post("/forget-password", forgetPassword);
+
 export default router;
