@@ -21,7 +21,7 @@ import {
   generateToken,
 } from "../utils/auth";
 import moment from "moment";
-import { verify } from "crypto";
+
 import { error } from "console";
 import { stat } from "fs";
 import { errorCode } from "../config/errorCode";
@@ -565,6 +565,103 @@ export const forgetPassword = [
       message: `We are sending OTP to 09${result.phone} to reset password.`,
       phone: result.phone,
       token: result.rememberToken,
+    });
+  },
+];
+
+export const verify = [
+  body("phone", "Phone number is not valid")
+    .trim()
+    .notEmpty()
+    .matches("^[0-9]+$")
+    .isLength({ min: 5, max: 12 })
+    .withMessage("Phone number must be between 5 to 12 digits"),
+  body("otp", "OTP is not valid")
+    .trim()
+    .notEmpty()
+    .matches("^[0-9]+$")
+    .isLength({ min: 6, max: 6 })
+    .withMessage("OTP must be 6 digits"),
+  body("token", "Token is required").notEmpty().escape(),
+  async (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req).array({ onlyFirstError: true });
+    //if vlidation error occurs
+    if (errors.length > 0) {
+      const error: any = new Error(errors[0].msg);
+      error.status = 400;
+      error.code = "Error_Invalid";
+      return next(error);
+    }
+
+    const { phone, otp, token } = req.body;
+    const user = await getUserByPhone(phone);
+    checkUserIfNotExists(user);
+    const otpRow = await getOtpByPhone(phone);
+
+    const lastOtpVerify = new Date(otpRow!.updatedAt).toLocaleDateString();
+    const today = new Date().toLocaleDateString();
+    const isSameDate = lastOtpVerify === today;
+    // If OTP error is in the same date and over limit
+    checkOtpErrorIfSameDate(isSameDate, otpRow!.error);
+
+    // Token is wrong
+    if (otpRow?.rememberToken !== token) {
+      const otpData = {
+        error: 5,
+      };
+      await updateOtp(otpRow!.id, otpData);
+
+      const error: any = new Error(errors[0].msg);
+      error.status = 400;
+      error.code = "Invalid_Token";
+      return next(error);
+    }
+
+    // OTP is expired
+    const isExpired = moment().diff(otpRow!.updatedAt, "minutes") > 2;
+    if (isExpired) {
+      const error: any = new Error(errors[0].msg);
+      error.status = 403;
+      error.code = "Otp_Expired";
+      return next(error);
+    }
+
+    const isMatchOtp = await bcrypt.compare(otp, otpRow!.otp);
+    // OTP is wrong
+    if (!isMatchOtp) {
+      // If OTP error is first time today
+      if (!isSameDate) {
+        const otpData = {
+          error: 1,
+        };
+        await updateOtp(otpRow!.id, otpData);
+      } else {
+        // If OTP error is not first time today
+        const otpData = {
+          error: { increment: 1 },
+        };
+        await updateOtp(otpRow!.id, otpData);
+      }
+
+      const error: any = new Error(errors[0].msg);
+      error.status = 401;
+      error.code = "Otp_Incorrect";
+      return next(error);
+    }
+
+    // All are OK
+    const verifyToken = generateToken();
+    const otpData = {
+      verifyToken,
+      error: 0,
+      count: 1,
+    };
+    const result = await updateOtp(otpRow!.id, otpData);
+
+    res.status(200).json({
+      message: "OTP is successfully verified to reset password",
+      phone: result.phone,
+      token: result.verifyToken,
     });
   },
 ];

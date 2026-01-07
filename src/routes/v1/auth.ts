@@ -1,9 +1,11 @@
 import express from "express";
 import {
   confirmPassword,
+  forgetPassword,
   login,
   logout,
   register,
+  verify,
   verifyOtp,
 } from "../../controllers/authController";
 const router = express.Router();
@@ -15,5 +17,6 @@ router.post("/login", login);
 router.post("/logout", logout);
 
 router.post("/forget-password", forgetPassword);
+router.post("/verify", verify);
 
 export default router;
