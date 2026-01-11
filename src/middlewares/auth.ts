@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { errorCode } from "../config/errorCode";
 import { getUserById, updateUser } from "../services/auth";
+import { create } from "domain";
+import { createError } from "../utils/error";
 
 interface CustomRequest extends Request {
   userId?: number;
@@ -11,10 +13,13 @@ export const auth = (req: CustomRequest, res: Response, next: NextFunction) => {
   const refreshToken = req.cookies ? req.cookies.refreshToken : null;
 
   if (!refreshToken) {
-    const err: any = new Error("You are not authorized");
-    err.status = 401;
-    err.code = "Error_Unauthorized";
-    return next(err);
+    return next(
+      createError(
+        "You are not an authenticated user.",
+        401,
+        errorCode.unauthenticated
+      )
+    );
   }
 
   const generateNewTokens = async () => {
@@ -32,39 +37,54 @@ export const auth = (req: CustomRequest, res: Response, next: NextFunction) => {
       //     errorCode.unauthenticated
       //   )
       // );
-      const err: any = new Error("You are not an authenticated user.");
-      err.status = 401;
-      err.code = errorCode.unauthenticated;
-      return next(err);
+      return next(
+        createError(
+          "You are not an authenticated user.",
+          401,
+          errorCode.unauthenticated
+        )
+      );
     }
 
     if (isNaN(decoded.id)) {
-      const err: any = new Error("You are not an authenticated user.");
-      err.status = 401;
-      err.code = errorCode.unauthenticated;
-      return next(err);
+      return next(
+        createError(
+          "You are not an authenticated user.",
+          401,
+          errorCode.unauthenticated
+        )
+      );
     }
 
     const user = await getUserById(decoded.id);
     if (!user) {
-      const err: any = new Error("You are not an authenticated user.");
-      err.status = 401;
-      err.code = errorCode.unauthenticated;
-      return next(err);
+      return next(
+        createError(
+          "You are not an authenticated user.",
+          401,
+          errorCode.unauthenticated
+        )
+      );
     }
 
     if (user.phone !== decoded.phone) {
-      const err: any = new Error("You are not an authenticated user.");
-      err.status = 401;
-      err.code = errorCode.unauthenticated;
-      return next(err);
+      return next(
+        createError(
+          "You are not an authenticated user.",
+          401,
+          errorCode.unauthenticated
+        )
+      );
     }
 
     if (user.randToken !== refreshToken) {
-      const err: any = new Error("You are not an authenticated user.");
-      err.status = 401;
-      err.code = errorCode.unauthenticated;
-      return next(err);
+      return next(
+        createError(
+          "You are not an authenticated user.",
+          401,
+          errorCode.unauthenticated
+        )
+      );
     }
 
     // Authorization token
@@ -121,10 +141,9 @@ export const auth = (req: CustomRequest, res: Response, next: NextFunction) => {
       };
 
       if (isNaN(decoded.id)) {
-        const err: any = new Error("You are not an authenticated user.");
-        err.status = 401;
-        err.code = errorCode.unauthenticated;
-        return next(err);
+        return next(
+          createError("Access Token is invalid.", 400, errorCode.attack)
+        );
       }
 
       req.userId = decoded.id;
@@ -136,10 +155,9 @@ export const auth = (req: CustomRequest, res: Response, next: NextFunction) => {
         // error.status = 401;
         // error.code = errorCode.accessTokenExpired;
       } else {
-        error.message = "Access Token is invalid.";
-        error.status = 400;
-        error.code = errorCode.attack;
-        return next(error);
+        return next(
+          createError("Access Token is invalid.", 400, errorCode.attack)
+        );
       }
     }
   }
