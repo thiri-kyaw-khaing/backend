@@ -5,6 +5,7 @@ import {
   login,
   logout,
   register,
+  resetPassword,
   verify,
   verifyOtp,
 } from "../../controllers/authController";

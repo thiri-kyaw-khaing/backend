@@ -594,7 +594,9 @@ export const verify = [
     }
 
     const { phone, otp, token } = req.body;
+    console.log("Phone in verify:", phone);
     const user = await getUserByPhone(phone);
+    console.log("User in verify:", user);
     checkUserIfNotExists(user);
     const otpRow = await getOtpByPhone(phone);
 

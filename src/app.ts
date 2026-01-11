@@ -7,16 +7,12 @@ import cookieParser from "cookie-parser";
 import { limiter } from "./middlewares/rateLimiter";
 import { check } from "./middlewares/check";
 import { Request, Response } from "express";
-import authRouter from "./routes/v1/auth";
-import healthRouter from "./routes/v1/health";
-import userRouter from "./routes/v1/admin/user";
-import profileRouter from "./routes/v1/api/user";
+import routes from "./routes/web";
 import i18next from "i18next";
 import Backend from "i18next-fs-backend";
 import middleware from "i18next-http-middleware";
 import path from "path";
-import { authorise } from "./middlewares/authorise";
-import { auth } from "./middlewares/auth";
+
 const app = express();
 
 var whitelist = ["http://example1.com", "http://localhost:5173"];
@@ -67,10 +63,7 @@ i18next
   });
 app.use(middleware.handle(i18next));
 
-app.use("/api/v1", healthRouter);
-app.use("/api/v1", authRouter);
-app.use("/api/v1/admin", auth, authorise(true, "ADMIN"), userRouter);
-app.use("/api/v1", profileRouter);
+app.use(routes);
 
 app.use((error: any, req: Request, res: Response, next: any) => {
   const status = error.status || 500;
