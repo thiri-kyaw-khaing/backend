@@ -1,4 +1,6 @@
 import { randomBytes } from "crypto";
+import { create } from "domain";
+import { createError } from "./error";
 
 export const checkUserExists = async (user: any) => {
   if (user) {
