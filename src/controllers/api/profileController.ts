@@ -73,3 +73,79 @@ export const uploadProfile = async (
     image: fileName,
   });
 };
+
+export const uploadProfileMultiple = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  console.log("req.files -------", req.files);
+
+  res.status(200).json({
+    message: "Multiple Profile pictures uploaded successfully.",
+  });
+};
+
+export const uploadProfileOptimize = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  const userId = req.userId;
+  const image = req.file;
+  const user = await getUserById(userId!);
+  checkUserIfNotExists(user);
+  checkUploadFile(image);
+
+  const splitFileName = req.file?.filename.split(".")[0];
+
+  // const job = await ImageQueue.add(
+  //   "optimize-image",
+  //   {
+  //     filePath: req.file?.path,
+  //     fileName: `${splitFileName}.webp`,
+  //     width: 200,
+  //     height: 200,
+  //     quality: 50,
+  //   },
+  //   {
+  //     attempts: 3,
+  //     backoff: {
+  //       type: "exponential",
+  //       delay: 1000,
+  //     },
+  //   }
+  // );
+  if (user?.image) {
+    try {
+      const originalFilePath = path.join(
+        __dirname,
+        "../../..",
+        "/uploads/images",
+        user!.image!,
+      );
+      // const optimizedFilePath = path.join(
+      //   __dirname,
+      //   "../../..",
+      //   "/uploads/optimize",
+      //   user!.image!.split(".")[0] + ".webp",
+      // );
+
+      // await unlink(originalFilePath);
+      // await unlink(optimizedFilePath);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const userData = {
+    image: req.file?.filename,
+  };
+  await updateUser(user?.id!, userData);
+
+  res.status(200).json({
+    message: "Profile picture uploaded successfully.",
+    image: splitFileName + ".webp",
+    // jobId: job.id,
+  });
+};
