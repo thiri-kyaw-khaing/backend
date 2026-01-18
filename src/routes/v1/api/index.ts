@@ -9,6 +9,6 @@ const router = express.Router();
 
 router.get("/change-language", changeLanguage);
 
-router.patch("/profile/upload", auth, upload.single("image"), uploadProfile);
+router.patch("/upload", auth, upload.single("image"), uploadProfile);
 
 export default router;

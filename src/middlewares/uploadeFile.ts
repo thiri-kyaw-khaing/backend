@@ -3,6 +3,7 @@ import multer, { FileFilterCallback } from "multer";
 
 const fileStorage = multer.diskStorage({
   destination: function (req, file, cb) {
+    console.log("Multer File ----", file);
     cb(null, "uploads/images");
     // const type = file.mimetype.split("/")[0];
     // if (type === "image") {

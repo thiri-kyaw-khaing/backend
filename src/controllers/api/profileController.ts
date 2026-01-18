@@ -7,6 +7,7 @@ import path from "path";
 import { unlink } from "node:fs/promises";
 interface CustomRequest extends Request {
   userId?: number;
+  file?: any;
 }
 
 export const changeLanguage = [
