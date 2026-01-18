@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { errorCode } from "../config/errorCode";
 import { getUserById } from "../services/auth";
+import { createError } from "../utils/error";
+
+import { create } from "domain";
 interface CustomRequest extends Request {
   userId?: number;
   user?: any;
@@ -10,10 +13,13 @@ export const authorise = (permission: boolean, ...roles: string[]) => {
     const userId = req.userId;
     const user = await getUserById(userId!);
     if (!user) {
-      const err: any = new Error("This account is not registered.");
-      err.status = 404;
-      err.code = errorCode.unauthenticated;
-      return next(err);
+      return next(
+        createError(
+          "You are not an authenticated user.",
+          401,
+          errorCode.unauthenticated,
+        ),
+      );
     }
 
     const result = roles.includes(user.role);
@@ -21,17 +27,23 @@ export const authorise = (permission: boolean, ...roles: string[]) => {
     // permission && result
 
     if (permission && !result) {
-      const err: any = new Error("This action is not allowed.");
-      err.status = 403;
-      err.code = errorCode.unauthorised;
-      return next(err);
+      return next(
+        createError(
+          "This action is allowed for specific roles only.",
+          403,
+          errorCode.unauthorised,
+        ),
+      );
     }
 
     if (!permission && result) {
-      const err: any = new Error("This action is not allowed.");
-      err.status = 403;
-      err.code = errorCode.unauthorised;
-      return next(err);
+      return next(
+        createError(
+          "This action is not allowed for your role.",
+          403,
+          errorCode.unauthorised,
+        ),
+      );
     }
 
     req.user = user;
