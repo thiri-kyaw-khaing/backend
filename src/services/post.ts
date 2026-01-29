@@ -15,7 +15,7 @@ export type PostArgs = {
   tags: string[];
 };
 
-export const getOnePost = async (postData: PostArgs) => {
+export const createOnePost = async (postData: PostArgs) => {
   const data: any = {
     title: postData.title,
     content: postData.content,

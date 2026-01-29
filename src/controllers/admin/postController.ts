@@ -4,7 +4,7 @@ import { getUserById } from "../../services/auth";
 import { checkUserIfNotExists } from "../../utils/auth";
 import { checkUploadFile } from "../../utils/check";
 import ImageQueue from "../../jobs/queues/imageQueue";
-import { getOnePost } from "../../services/post";
+import { createOnePost } from "../../services/post";
 interface CustomRequest extends Request {
   userId?: number;
 }
@@ -50,8 +50,8 @@ export const createPost = [
       {
         filePath: req.file?.path,
         fileName: `${splitFileName}.webp`,
-        width: 200,
-        height: 200,
+        width: 835,
+        height: 577,
         quality: 50,
       },
       {
@@ -73,7 +73,7 @@ export const createPost = [
       tags,
     };
 
-    const post = await getOnePost(data);
+    const post = await createOnePost(data);
     res
       .status(201)
       .json({ message: "Post created successfully", postId: post.id });
