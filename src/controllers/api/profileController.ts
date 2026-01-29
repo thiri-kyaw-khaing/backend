@@ -105,6 +105,9 @@ export const uploadProfileOptimize = async (
     {
       filePath: req.file?.path,
       fileName: `${splitFileName}.webp`,
+      width: 200,
+      height: 200,
+      quality: 50,
     },
     {
       attempts: 3,
