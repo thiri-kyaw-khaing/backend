@@ -24,8 +24,8 @@ const imageWorker = new Worker(
   //{ connection: redis }
   {
     connection: {
-      host: process.env.REDIS_HOST || "172.0.0.1",
-      port: Number(process.env.REDIS_PORT!) || 6379,
+      host: "127.0.0.1",
+      port: 6379,
     },
   },
 );

@@ -40,7 +40,7 @@ const fileFilter = (
 const upload = multer({
   storage: fileStorage,
   fileFilter,
-  limits: { fileSize: 1024 * 1024 * 10 }, // Testing purpose 10MB
+  limits: { fileSize: 1024 * 1024 * 100 }, // Testing purpose 10MB
 });
 
 export const uploadMemory = multer({

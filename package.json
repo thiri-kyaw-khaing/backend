@@ -6,7 +6,8 @@
     "test": "jest",
     "dev": "nodemon src/index.ts",
     "build": "tsc -p .",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "work": "nodemon src/jobs/workers/imageWorker.ts"
   },
   "keywords": [],
   "author": "",
@@ -36,6 +37,7 @@
   "dependencies": {
     "@prisma/client": "^6.19.0",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.67.2",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -48,6 +50,7 @@
     "i18next": "^25.7.3",
     "i18next-fs-backend": "^2.6.1",
     "i18next-http-middleware": "^3.9.2",
+    "ioredis": "^5.9.2",
     "jest-config": "^30.2.0",
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.30.1",

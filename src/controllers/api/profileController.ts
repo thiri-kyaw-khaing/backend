@@ -5,6 +5,7 @@ import { checkUserIfNotExists } from "../../utils/auth";
 import { checkUploadFile } from "../../utils/check";
 import path from "path";
 import { unlink } from "node:fs/promises";
+import ImageQueue from "../../jobs/queues/imageQueue";
 interface CustomRequest extends Request {
   userId?: number;
   file?: any;
@@ -99,6 +100,21 @@ export const uploadProfileOptimize = async (
 
   const splitFileName = req.file?.filename.split(".")[0];
 
+  const job = await ImageQueue.add(
+    "optimize-image",
+    {
+      filePath: req.file?.path,
+      fileName: `${splitFileName}.webp`,
+    },
+    {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 1000,
+      },
+    },
+  );
+
   // const job = await ImageQueue.add(
   //   "optimize-image",
   //   {
@@ -118,21 +134,23 @@ export const uploadProfileOptimize = async (
   // );
   if (user?.image) {
     try {
+      // Delete original image in database
       const originalFilePath = path.join(
         __dirname,
         "../../..",
         "/uploads/images",
         user!.image!,
       );
-      // const optimizedFilePath = path.join(
-      //   __dirname,
-      //   "../../..",
-      //   "/uploads/optimize",
-      //   user!.image!.split(".")[0] + ".webp",
-      // );
+      // Delete optimized image in database
+      const optimizedFilePath = path.join(
+        __dirname,
+        "../../..",
+        "/uploads/optimize",
+        user!.image!.split(".")[0] + ".webp",
+      );
 
-      // await unlink(originalFilePath);
-      // await unlink(optimizedFilePath);
+      await unlink(originalFilePath);
+      await unlink(optimizedFilePath);
     } catch (error) {
       console.log(error);
     }
@@ -146,6 +164,6 @@ export const uploadProfileOptimize = async (
   res.status(200).json({
     message: "Profile picture uploaded successfully.",
     image: splitFileName + ".webp",
-    // jobId: job.id,
+    jobId: job.id,
   });
 };
