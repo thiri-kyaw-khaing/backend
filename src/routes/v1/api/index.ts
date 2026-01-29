@@ -7,6 +7,10 @@ import {
   uploadProfileOptimize,
 } from "../../../controllers/api/profileController";
 import upload from "../../../middlewares/uploadeFile";
+import {
+  getPost,
+  getPostsByPagination,
+} from "../../../controllers/api/postController";
 const router = express.Router();
 
 router.get("/change-language", changeLanguage);
@@ -25,5 +29,8 @@ router.patch(
   upload.single("avatar"),
   uploadProfileOptimize,
 );
+
+router.get("/posts/:id", auth, getPost);
+router.get("/posts", auth, getPostsByPagination);
 
 export default router;
