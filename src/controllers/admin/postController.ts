@@ -4,6 +4,7 @@ import { getUserById } from "../../services/auth";
 import { checkUserIfNotExists } from "../../utils/auth";
 import { checkUploadFile } from "../../utils/check";
 import ImageQueue from "../../jobs/queues/imageQueue";
+import { getOnePost } from "../../services/post";
 interface CustomRequest extends Request {
   userId?: number;
 }
@@ -61,8 +62,21 @@ export const createPost = [
         },
       },
     );
+    const data = {
+      title,
+      content,
+      body,
+      image: req.file!.filename,
+      authorId: userId!,
+      category,
+      type,
+      tags,
+    };
 
-    res.status(201).json({ message: "Post created successfully" });
+    const post = await getOnePost(data);
+    res
+      .status(201)
+      .json({ message: "Post created successfully", postId: post.id });
   },
 ];
 
