@@ -1,20 +1,51 @@
 import { body, check, validationResult } from "express-validator";
+import sanitizeHtml from "sanitize-html";
 import { NextFunction, Request, Response } from "express";
 import { getUserById } from "../../services/auth";
 import { checkUserIfNotExists } from "../../utils/auth";
 import { checkUploadFile } from "../../utils/check";
 import ImageQueue from "../../jobs/queues/imageQueue";
 import { createOnePost } from "../../services/post";
+import path from "path";
+import { unlink } from "fs/promises";
+import { errorCode } from "../../config/errorCode";
+import { createError } from "../../utils/error";
 interface CustomRequest extends Request {
   userId?: number;
 }
+
+const removeFiles = async (
+  originalFile: string,
+  optimizedFile: string | null,
+) => {
+  try {
+    const originalFilePath = path.join(
+      __dirname,
+      "../../..",
+      "/uploads/images",
+      originalFile,
+    );
+    await unlink(originalFilePath);
+    if (optimizedFile) {
+      const optimizedFilePath = path.join(
+        __dirname,
+        "../../..",
+        "/uploads/images",
+        optimizedFile,
+      );
+      await unlink(optimizedFilePath);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
 export const createPost = [
   body("title", "Title is required.").trim().notEmpty().escape(),
   body("content", "Content is required.").trim().notEmpty().escape(),
   body("body", "Body is required.")
     .trim()
     .notEmpty()
-    // .customSanitizer((value) => sanitizeHtml(value))
+    .customSanitizer((value) => sanitizeHtml(value))
     .notEmpty(),
   body("category", "Category is required.").trim().notEmpty().escape(),
   body("type", "Type is required.").trim().notEmpty().escape(),
@@ -31,10 +62,10 @@ export const createPost = [
     const errors = validationResult(req).array({ onlyFirstError: true });
     //if vlidation error occurs
     if (errors.length > 0) {
-      const error: any = new Error(errors[0].msg);
-      error.status = 400;
-      error.code = "Error_Invalid";
-      return next(error);
+      if (req.file) {
+        await removeFiles(req.file.filename, null);
+      }
+      return next(createError(errors[0].msg, 400, errorCode.invalid));
     }
     let { title, content, body, category, type, tags } = req.body;
     const userId = req.userId;
