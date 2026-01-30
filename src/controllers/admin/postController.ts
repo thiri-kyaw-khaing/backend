@@ -217,7 +217,9 @@ export const updatePost = [
     }
 
     const postUpdated = await updateOnePost(post.id, data);
-    res.status(201).json({ message: "Post created successfully" });
+    res
+      .status(201)
+      .json({ message: "Post created successfully", postId: postUpdated.id });
   },
 ];
 
