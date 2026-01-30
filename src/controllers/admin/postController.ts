@@ -71,7 +71,14 @@ export const createPost = [
     const userId = req.userId;
     const image = req.file;
     const user = await getUserById(userId!);
-    checkUserIfNotExists(user);
+    if (!user) {
+      if (req.file) {
+        await removeFiles(req.file.filename, null);
+      }
+      return next(
+        createError("User not found", 404, errorCode.unauthenticated),
+      );
+    }
     checkUploadFile(image);
 
     const splitFileName = req.file?.filename.split(".")[0];
