@@ -6,7 +6,7 @@ interface CustomRequest extends Request {
 export const check = (
   req: CustomRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   //   const err: any = new Error("Unauthorized");
   //   err.status = 401;
@@ -15,4 +15,13 @@ export const check = (
   // Perform your checks here
   req.userId = 12345; // Example: attach a user ID to the request
   next();
+};
+
+export const checkModelExist = (model: any) => {
+  if (!model) {
+    const error: any = new Error("Model does not exist");
+    error.status = 404;
+    error.code = "Error_Model_Not_Found";
+    throw error;
+  }
 };

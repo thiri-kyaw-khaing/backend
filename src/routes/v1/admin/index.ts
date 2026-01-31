@@ -14,6 +14,6 @@ router.get("/users", auth, getAllUsers);
 
 router.post("/posts", upload.single("image"), createPost);
 router.patch("/posts", upload.single("image"), updatePost);
-router.delete("posts", deletePost);
+router.delete("/posts", deletePost);
 
 export default router;

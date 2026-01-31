@@ -5,12 +5,18 @@ import { getUserById } from "../../services/auth";
 import { checkUserIfNotExists } from "../../utils/auth";
 import { checkUploadFile } from "../../utils/check";
 import ImageQueue from "../../jobs/queues/imageQueue";
-import { createOnePost, getPostById, updateOnePost } from "../../services/post";
+import {
+  createOnePost,
+  deleteOnePost,
+  getPostById,
+  updateOnePost,
+} from "../../services/post";
 import path from "path";
 import { unlink } from "fs/promises";
 import { errorCode } from "../../config/errorCode";
 import { createError } from "../../utils/error";
 import { get } from "http";
+import { checkModelExist } from "../../middlewares/check";
 interface CustomRequest extends Request {
   userId?: number;
 }
@@ -224,23 +230,38 @@ export const updatePost = [
 ];
 
 export const deletePost = [
-  body("phone", "Phone number is not valid")
-    .trim()
-    .notEmpty()
-    .matches("^[0-9]+$")
-    .isLength({ min: 5, max: 12 })
-    .withMessage("Phone number must be between 5 to 12 digits"),
-  async (req: Request, res: Response, next: NextFunction) => {
+  body("postId", "Post ID is required.").trim().notEmpty().escape(),
+
+  async (req: CustomRequest, res: Response, next: NextFunction) => {
     // Registration logic here
     const errors = validationResult(req).array({ onlyFirstError: true });
     //if vlidation error occurs
     if (errors.length > 0) {
-      const error: any = new Error(errors[0].msg);
-      error.status = 400;
-      error.code = "Error_Invalid";
-      return next(error);
+      return next(createError(errors[0].msg, 400, errorCode.invalid));
     }
-    let phone = req.body.phone; //09123456789
-    res.status(201).json({ message: "Post created successfully" });
+    let { postId } = req.body;
+    const userId = req.userId;
+    const user = await getUserById(userId!);
+    if (!user) {
+      return next(
+        createError("User not found", 404, errorCode.unauthenticated),
+      );
+    }
+    //if post id are not the same
+    const post = await getPostById(+postId);
+    checkModelExist(post);
+
+    //if author id is not same as login user id
+    if (post!.authorId !== userId) {
+      return next(createError("Unauthorized", 403, errorCode.unauthorised));
+    }
+
+    //delete post
+    const postDeleted = await deleteOnePost(post!.id);
+    const optimizedFile = post!.image.split(".")[0] + ".webp";
+    await removeFiles(post!.image, optimizedFile);
+    res
+      .status(201)
+      .json({ message: "Post deleted successfully", postId: postDeleted.id });
   },
 ];
