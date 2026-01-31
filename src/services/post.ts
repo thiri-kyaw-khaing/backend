@@ -143,6 +143,6 @@ export const getPostsWithRelations = async (postId: number) => {
   });
 };
 
-export const getPostOffSet = async (options: any) => {
+export const getPostOptions = async (options: any) => {
   return prisma.post.findMany(options);
 };

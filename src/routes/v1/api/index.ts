@@ -10,6 +10,7 @@ import upload from "../../../middlewares/uploadeFile";
 import {
   getPost,
   getPostsByPagination,
+  getInfinitePostsByPagination,
 } from "../../../controllers/api/postController";
 const router = express.Router();
 
@@ -32,5 +33,6 @@ router.patch(
 
 router.get("/posts/:id", auth, getPost);
 router.get("/posts", auth, getPostsByPagination);
+router.get("/post", auth, getInfinitePostsByPagination);
 
 export default router;
