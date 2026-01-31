@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import { checkUserExists, checkUserIfNotExists } from "../../utils/auth";
 import { getUserById } from "../../services/auth";
 import { getPostsWithRelations } from "../../services/post";
+
 interface CustomRequest extends Request {
   userId?: number;
 }

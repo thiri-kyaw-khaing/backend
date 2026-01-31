@@ -2,8 +2,8 @@ import { title } from "process";
 import { PrismaClient } from "../generated/prisma";
 import { connect } from "http2";
 import { create } from "domain";
+import { prisma } from "./prismaClient";
 
-const prisma = new PrismaClient();
 export type PostArgs = {
   title: string;
   content: string;
@@ -121,6 +121,7 @@ export const getPostsWithRelations = async (postId: number) => {
         select: {
           firstName: true,
           lastName: true,
+          fullName: true,
         },
       },
       category: {
