@@ -1,14 +1,13 @@
 import { body, check, param, validationResult } from "express-validator";
 import { NextFunction, Request, Response } from "express";
-import { checkUserExists } from "../../utils/auth";
-import { get } from "https";
-import { get } from "http";
+import { checkUserExists, checkUserIfNotExists } from "../../utils/auth";
 import { getUserById } from "../../services/auth";
+import { getPostsWithRelations } from "../../services/post";
 interface CustomRequest extends Request {
   userId?: number;
 }
 export const getPost = [
-  param("postId", "Post ID is not valid").isInt({ gt: 0 }),
+  param("id", "Post ID is not valid").isInt({ gt: 0 }),
   async (req: CustomRequest, res: Response, next: NextFunction) => {
     // Registration logic here
     const errors = validationResult(req).array({ onlyFirstError: true });
@@ -19,12 +18,14 @@ export const getPost = [
       error.code = "Error_Invalid";
       return next(error);
     }
-    let postId = req.params.postId;
+    let postId = req.params.id;
     const userId = req.userId;
     const user = await getUserById(userId!);
-    checkUserExists(user);
+    checkUserIfNotExists(user);
 
-    res.status(201).json({ message: "Post retrieved successfully" });
+    const post = await getPostsWithRelations(+postId);
+
+    res.status(201).json({ message: "Post retrieved successfully", post });
   },
 ];
 

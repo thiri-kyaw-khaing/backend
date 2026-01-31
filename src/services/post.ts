@@ -107,3 +107,37 @@ export const deleteOnePost = async (postId: number) => {
     where: { id: postId },
   });
 };
+
+export const getPostsWithRelations = async (postId: number) => {
+  return await prisma.post.findUnique({
+    where: { id: postId },
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      body: true,
+      image: true,
+      author: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
+      category: {
+        select: {
+          name: true,
+        },
+      },
+      type: {
+        select: {
+          name: true,
+        },
+      },
+      tags: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+};
