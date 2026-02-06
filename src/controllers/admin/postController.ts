@@ -17,6 +17,7 @@ import { errorCode } from "../../config/errorCode";
 import { createError } from "../../utils/error";
 import { get } from "http";
 import { checkModelExist } from "../../middlewares/check";
+import { cacheQueue } from "../../jobs/queues/cacheQueue";
 interface CustomRequest extends Request {
   userId?: number;
 }
@@ -119,6 +120,16 @@ export const createPost = [
     };
 
     const post = await createOnePost(data);
+    await cacheQueue.add(
+      "invalidate-post-cache",
+      {
+        pattern: "posts:*",
+      },
+      {
+        jobId: `invalidate-${Date.now()}`,
+        priority: 1,
+      },
+    );
     res
       .status(201)
       .json({ message: "Post created successfully", postId: post.id });
@@ -223,6 +234,16 @@ export const updatePost = [
     }
 
     const postUpdated = await updateOnePost(post.id, data);
+    await cacheQueue.add(
+      "invalidate-post-cache",
+      {
+        pattern: "posts:*",
+      },
+      {
+        jobId: `invalidate-${Date.now()}`,
+        priority: 1,
+      },
+    );
     res
       .status(201)
       .json({ message: "Post created successfully", postId: postUpdated.id });
@@ -260,6 +281,16 @@ export const deletePost = [
     const postDeleted = await deleteOnePost(post!.id);
     const optimizedFile = post!.image.split(".")[0] + ".webp";
     await removeFiles(post!.image, optimizedFile);
+    await cacheQueue.add(
+      "invalidate-post-cache",
+      {
+        pattern: "posts:*",
+      },
+      {
+        jobId: `invalidate-${Date.now()}`,
+        priority: 1,
+      },
+    );
     res
       .status(201)
       .json({ message: "Post deleted successfully", postId: postDeleted.id });
