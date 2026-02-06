@@ -4,6 +4,7 @@ import { checkUserExists, checkUserIfNotExists } from "../../utils/auth";
 import { getUserById } from "../../services/auth";
 import { getPostOptions, getPostsWithRelations } from "../../services/post";
 import { get } from "http";
+import { getOrSetCache } from "../../utils/cache";
 
 interface CustomRequest extends Request {
   userId?: number;
@@ -201,7 +202,11 @@ export const getInfinitePostsByPagination = [
     };
 
     try {
-      const posts = await getPostOptions(options);
+      // const posts = await getPostOptions(options);
+      const cacheKey = `posts:${JSON.stringify(req.query)}`;
+      const posts = await getOrSetCache(cacheKey, async () => {
+        return await getPostOptions(options);
+      });
       const hasNextPage = posts.length > +limit;
 
       if (hasNextPage) {
