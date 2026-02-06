@@ -5,6 +5,31 @@ import path from "path";
 // import { redis } from "../../../config/redisClient";
 
 // Create a worker to process the image optimization job
+// const imageWorker = new Worker(
+//   "imageQueue",
+//   async (job) => {
+//     const { filePath, fileName, width, height, quality } = job.data;
+
+//     const optimizedImagePath = path.join(
+//       __dirname,
+//       "../../..",
+//       "/uploads/optimize",
+//       fileName,
+//     );
+//     await sharp(filePath)
+//       .resize(width, height)
+//       .webp({ quality: quality })
+//       .toFile(optimizedImagePath);
+//   },
+//   //{ connection: redis }
+//   {
+//     connection: {
+//       host: "127.0.0.1",
+//       port: 6379,
+//     },
+//   },
+// );
+
 const imageWorker = new Worker(
   "imageQueue",
   async (job) => {
@@ -24,8 +49,8 @@ const imageWorker = new Worker(
   //{ connection: redis }
   {
     connection: {
-      host: "127.0.0.1",
-      port: 6379,
+      host: process.env.REDIS_HOST || "172.0.0.1",
+      port: Number(process.env.REDIS_PORT!) || 6379,
     },
   },
 );
