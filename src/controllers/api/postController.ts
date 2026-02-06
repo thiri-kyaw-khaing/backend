@@ -26,7 +26,11 @@ export const getPost = [
     const user = await getUserById(userId!);
     checkUserIfNotExists(user);
 
-    const post = await getPostsWithRelations(+postId);
+    // const post = await getPostsWithRelations(+postId);
+    const cacheKey = `posts:${JSON.stringify(+postId)}`;
+    const post = await getOrSetCache(cacheKey, async () => {
+      return await getPostsWithRelations(+postId);
+    });
 
     res.status(201).json({ message: "Post retrieved successfully", post });
   },
@@ -76,7 +80,10 @@ export const getPostsByPagination = [
       },
     };
 
-    const posts = await getPostOptions(options);
+    const cacheKey = `posts:${JSON.stringify(req.query)}`;
+    const posts = await getOrSetCache(cacheKey, async () => {
+      return await getPostOptions(options);
+    });
 
     const hasNextPage = posts.length > +limit;
     if (hasNextPage) {
