@@ -20,6 +20,7 @@ import { checkModelExist } from "../../middlewares/check";
 import { cacheQueue } from "../../jobs/queues/cacheQueue";
 interface CustomRequest extends Request {
   userId?: number;
+  user?: any;
 }
 
 const removeFiles = async (
@@ -47,6 +48,7 @@ const removeFiles = async (
     console.log(error);
   }
 };
+
 export const createPost = [
   body("title", "Title is required.").trim().notEmpty().escape(),
   body("content", "Content is required.").trim().notEmpty().escape(),
@@ -76,17 +78,18 @@ export const createPost = [
       return next(createError(errors[0].msg, 400, errorCode.invalid));
     }
     let { title, content, body, category, type, tags } = req.body;
-    const userId = req.userId;
+    // const userId = req.userId;
     const image = req.file;
-    const user = await getUserById(userId!);
-    if (!user) {
-      if (req.file) {
-        await removeFiles(req.file.filename, null);
-      }
-      return next(
-        createError("User not found", 404, errorCode.unauthenticated),
-      );
-    }
+    const user = req.user;
+    // const user = await getUserById(userId!);
+    // if (!user) {
+    //   if (req.file) {
+    //     await removeFiles(req.file.filename, null);
+    //   }
+    //   return next(
+    //     createError("User not found", 404, errorCode.unauthenticated),
+    //   );
+    // }
     checkUploadFile(image);
 
     const splitFileName = req.file?.filename.split(".")[0];
@@ -113,7 +116,7 @@ export const createPost = [
       content,
       body,
       image: req.file!.filename,
-      authorId: userId!,
+      authorId: user.id,
       category,
       type,
       tags,
@@ -167,16 +170,17 @@ export const updatePost = [
       return next(createError(errors[0].msg, 400, errorCode.invalid));
     }
     let { postId, title, content, body, category, type, tags } = req.body;
-    const userId = req.userId;
-    const user = await getUserById(userId!);
-    if (!user) {
-      if (req.file) {
-        await removeFiles(req.file.filename, null);
-      }
-      return next(
-        createError("User not found", 404, errorCode.unauthenticated),
-      );
-    }
+    // const userId = req.userId;
+    const user = req.user;
+    // const user = await getUserById(userId!);
+    // if (!user) {
+    //   if (req.file) {
+    //     await removeFiles(req.file.filename, null);
+    //   }
+    //   return next(
+    //     createError("User not found", 404, errorCode.unauthenticated),
+    //   );
+    // }
     //if post id are not the same
     const post = await getPostById(+postId);
     if (!post) {
@@ -189,7 +193,7 @@ export const updatePost = [
     }
 
     //if author id is not same as login user id
-    if (post.authorId !== userId) {
+    if (post.authorId !== user.id) {
       if (req.file) {
         await removeFiles(req.file.filename, null);
       }
@@ -261,19 +265,21 @@ export const deletePost = [
       return next(createError(errors[0].msg, 400, errorCode.invalid));
     }
     let { postId } = req.body;
-    const userId = req.userId;
-    const user = await getUserById(userId!);
-    if (!user) {
-      return next(
-        createError("User not found", 404, errorCode.unauthenticated),
-      );
-    }
+    // const userId = req.userId;
+    // const user = await getUserById(userId!);
+    const user = req.user;
+
+    // if (!user) {
+    //   return next(
+    //     createError("User not found", 404, errorCode.unauthenticated),
+    //   );
+    // }
     //if post id are not the same
     const post = await getPostById(+postId);
     checkModelExist(post);
 
     //if author id is not same as login user id
-    if (post!.authorId !== userId) {
+    if (post!.authorId !== user.id) {
       return next(createError("Unauthorized", 403, errorCode.unauthorised));
     }
 
