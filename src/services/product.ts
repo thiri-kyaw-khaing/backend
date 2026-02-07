@@ -1,5 +1,4 @@
 import { prisma } from "./prismaClient";
-
 export type ProductArgs = {
   title: string;
   content: string;
