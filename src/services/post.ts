@@ -63,6 +63,7 @@ export const updateOnePost = async (postId: number, postData: PostArgs) => {
     content: postData.content,
     body: postData.body,
     category: {
+      set: [],
       connectOrCreate: {
         where: { name: postData.category },
         create: {
