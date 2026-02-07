@@ -10,29 +10,37 @@ export type ProductArgs = {
   tags: string[];
 };
 
-export const createOneProduct = async (productData: ProductArgs) => {
-  const data: any = {
-    title: productData.title,
-    content: productData.content,
-    body: productData.body,
-    image: productData.image,
-    author: { connect: { id: productData.authorId } },
+export const createOneProduct = async (data: any) => {
+  const productdata: any = {
+    name: data.name,
+    description: data.description,
+    price: data.price,
+    discount: data.discount,
+    inventory: data.inventory,
     category: {
       connectOrCreate: {
-        where: { name: productData.category },
-        create: { name: productData.category },
+        where: { name: data.category },
+        create: {
+          name: data.category,
+        },
       },
     },
     type: {
       connectOrCreate: {
-        where: { name: productData.type },
-        create: { name: productData.type },
+        where: { name: data.type },
+        create: {
+          name: data.type,
+        },
       },
     },
+    images: {
+      create: data.images,
+    },
   };
-  if (productData.tags && productData.tags.length > 0) {
-    data.tags = {
-      connectOrCreate: productData.tags.map((tagName) => ({
+
+  if (data.tags && data.tags.length > 0) {
+    productdata.tags = {
+      connectOrCreate: data.tags.map((tagName: string) => ({
         where: { name: tagName },
         create: {
           name: tagName,
@@ -40,8 +48,5 @@ export const createOneProduct = async (productData: ProductArgs) => {
       })),
     };
   }
-
-  return await prisma.product.create({
-    data: data,
-  });
+  return prisma.product.create({ data: productdata });
 };

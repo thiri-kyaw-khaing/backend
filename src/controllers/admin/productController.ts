@@ -18,31 +18,40 @@ import { createError } from "../../utils/error";
 import { get } from "http";
 import { checkModelExist } from "../../middlewares/check";
 import { cacheQueue } from "../../jobs/queues/cacheQueue";
+import { createOneProduct } from "../../services/product";
 interface CustomRequest extends Request {
   userId?: number;
   user?: any;
+  files?: any;
 }
 
 const removeFiles = async (
-  originalFile: string,
-  optimizedFile: string | null,
+  originalFiles: string[],
+  optimizedFiles: string[] | null,
 ) => {
   try {
-    const originalFilePath = path.join(
-      __dirname,
-      "../../..",
-      "/uploads/images",
-      originalFile,
-    );
-    await unlink(originalFilePath);
-    if (optimizedFile) {
-      const optimizedFilePath = path.join(
+    for (const originalFile of originalFiles) {
+      const originalFilePath = path.join(
         __dirname,
         "../../..",
         "/uploads/images",
-        optimizedFile,
+        originalFile,
       );
-      await unlink(optimizedFilePath);
+      // await safeUnlink(originalFilePath);  // Use this For windows error - 'EPERM' or 'EBUSY'
+      await unlink(originalFilePath);
+    }
+
+    if (optimizedFiles) {
+      for (const optimizedFile of optimizedFiles) {
+        const optimizedFilePath = path.join(
+          __dirname,
+          "../../..",
+          "/uploads/optimize",
+          optimizedFile,
+        );
+        // await safeUnlink(optimizedFilePath);  // Use this For windows error - 'EPERM' or 'EBUSY'
+        await unlink(optimizedFilePath);
+      }
     }
   } catch (error) {
     console.log(error);
@@ -50,9 +59,15 @@ const removeFiles = async (
 };
 
 export const createProduct = [
-  body("title", "Title is required.").trim().notEmpty().escape(),
-  body("content", "Content is required.").trim().notEmpty().escape(),
-
+  body("name", "Name is required.").trim().notEmpty().escape(),
+  body("description", "Description is required.").trim().notEmpty().escape(),
+  body("price", "Price is required.")
+    .isFloat({ min: 0.1 })
+    .isDecimal({ decimal_digits: "1,2" }),
+  body("discount", "Price is required.")
+    .isFloat({ min: 0 })
+    .isDecimal({ decimal_digits: "1,2" }),
+  body("inventory", "Price is required.").isInt({ min: 1 }),
   body("category", "Category is required.").trim().notEmpty().escape(),
   body("type", "Type is required.").trim().notEmpty().escape(),
   body("tags", "Tag is invalid.")
@@ -63,74 +78,86 @@ export const createProduct = [
       }
       return value;
     }),
+
   async (req: CustomRequest, res: Response, next: NextFunction) => {
-    // Registration logic here
     const errors = validationResult(req).array({ onlyFirstError: true });
-    //if vlidation error occurs
+    // If validation error occurs
     if (errors.length > 0) {
-      if (req.file) {
-        await removeFiles(req.file.filename, null);
+      if (req.files && req.files.length > 0) {
+        const originalFiles = req.files.map((file: any) => file.filename);
+        await removeFiles(originalFiles, null);
       }
       return next(createError(errors[0].msg, 400, errorCode.invalid));
     }
-    let { title, content, body, category, type, tags } = req.body;
-    // const userId = req.userId;
-    const image = req.file;
-    const user = req.user;
-    // const user = await getUserById(userId!);
-    // if (!user) {
-    //   if (req.file) {
-    //     await removeFiles(req.file.filename, null);
-    //   }
-    //   return next(
-    //     createError("User not found", 404, errorCode.unauthenticated),
-    //   );
-    // }
-    checkUploadFile(image);
 
-    const splitFileName = req.file?.filename.split(".")[0];
-
-    await ImageQueue.add(
-      "optimize-image",
-      {
-        filePath: req.file?.path,
-        fileName: `${splitFileName}.webp`,
-        width: 835,
-        height: 577,
-        quality: 50,
-      },
-      {
-        attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 1000,
-        },
-      },
-    );
-    const data = {
-      title,
-      content,
-      body,
-      image: req.file!.filename,
-      authorId: user.id,
+    const {
+      name,
+      description,
+      price,
+      discount,
+      inventory,
       category,
       type,
       tags,
+    } = req.body;
+
+    checkUploadFile(req.files && req.files.length > 0);
+
+    await Promise.all(
+      req.files.map(async (file: any) => {
+        const splitFileName = file.filename.split(".")[0];
+        return ImageQueue.add(
+          "optimize-image",
+          {
+            filePath: file.path,
+            fileName: `${splitFileName}.webp`,
+            width: 835,
+            height: 577,
+            quality: 100,
+          },
+          {
+            attempts: 3,
+            backoff: {
+              type: "exponential",
+              delay: 1000,
+            },
+          },
+        );
+      }),
+    );
+
+    const originalFileNames = req.files.map((file: any) => ({
+      path: file.filename,
+    }));
+
+    const data: any = {
+      name,
+      description,
+      price,
+      discount,
+      inventory: +inventory,
+      category,
+      type,
+      tags,
+      images: originalFileNames,
     };
 
-    const post = await createOneProduct(data);
+    const product = await createOneProduct(data);
+
     await cacheQueue.add(
-      "invalidate-post-cache",
+      "invalidate-product-cache",
       {
-        pattern: "posts:*",
+        pattern: "products:*",
       },
       {
         jobId: `invalidate-${Date.now()}`,
         priority: 1,
       },
     );
-    res
-      .status(201)
-      .json({ message: "Post created successfully", postId: post.id });
+
+    res.status(201).json({
+      message: "Successfully created a new product.",
+      postId: product.id,
+    });
   },
 ];

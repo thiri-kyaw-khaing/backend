@@ -18,7 +18,7 @@ import { createError } from "../../utils/error";
 import { get } from "http";
 import { checkModelExist } from "../../middlewares/check";
 import { cacheQueue } from "../../jobs/queues/cacheQueue";
-import { createOneProduct } from "../../services/product";
+import { PostArgs } from "../../services/post";
 interface CustomRequest extends Request {
   userId?: number;
   user?: any;
@@ -51,16 +51,14 @@ const removeFiles = async (
   }
 };
 
-export const createProduct = [
-  body("name", "Name is required.").trim().notEmpty().escape(),
-  body("description", "Description is required.").trim().notEmpty().escape(),
-  body("price", "Price is required.")
-    .isFloat({ min: 0.1 })
-    .isDecimal({ decimal_digits: "1,2" }),
-  body("discount", "Price is required.")
-    .isFloat({ min: 0 })
-    .isDecimal({ decimal_digits: "1,2" }),
-  body("inventory", "Price is required.").isInt({ min: 1 }),
+export const createPost = [
+  body("title", "Title is required.").trim().notEmpty().escape(),
+  body("content", "Content is required.").trim().notEmpty().escape(),
+  body("body", "Body is required.")
+    .trim()
+    .notEmpty()
+    .customSanitizer((value) => sanitizeHtml(value))
+    .notEmpty(),
   body("category", "Category is required.").trim().notEmpty().escape(),
   body("type", "Type is required.").trim().notEmpty().escape(),
   body("tags", "Tag is invalid.")
@@ -76,71 +74,68 @@ export const createProduct = [
     const errors = validationResult(req).array({ onlyFirstError: true });
     // If validation error occurs
     if (errors.length > 0) {
-      if (req.files && req.files.length > 0) {
-        const originalFiles = req.files.map((file: any) => file.filename);
-        await removeFiles(originalFiles, null);
+      if (req.file) {
+        await removeFiles(req.file.filename, null);
       }
       return next(createError(errors[0].msg, 400, errorCode.invalid));
     }
 
-    const {
-      name,
-      description,
-      price,
-      discount,
-      inventory,
-      category,
-      type,
-      tags,
-    } = req.body;
+    const { title, content, body, category, type, tags } = req.body;
+    // const userId = req.userId;
+    const user = req.user;
+    checkUploadFile(req.file);
+    // const user = await getUserById(userId!);
+    // if (!user) {
+    //   if (req.file) {
+    //     await removeFiles(req.file.filename, null);
+    //   }
 
-    checkUploadFile(req.files && req.files.length > 0);
+    //   return next(
+    //     createError(
+    //       "This user has not registered.",
+    //       401,
+    //       errorCode.unauthenticated
+    //     )
+    //   );
+    // }
 
-    await Promise.all(
-      req.files.map(async (file: any) => {
-        const splitFileName = file.filename.split(".")[0];
-        return ImageQueue.add(
-          "optimize-image",
-          {
-            filePath: file.path,
-            fileName: `${splitFileName}.webp`,
-            width: 835,
-            height: 577,
-            quality: 100,
-          },
-          {
-            attempts: 3,
-            backoff: {
-              type: "exponential",
-              delay: 1000,
-            },
-          },
-        );
-      }),
+    const splitFileName = req.file?.filename.split(".")[0];
+
+    await ImageQueue.add(
+      "optimize-image",
+      {
+        filePath: req.file?.path,
+        fileName: `${splitFileName}.webp`,
+        width: 835,
+        height: 577,
+        quality: 100,
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 1000,
+        },
+      },
     );
 
-    const originalFileNames = req.files.map((file: any) => ({
-      path: file.filename,
-    }));
-
-    const data: any = {
-      name,
-      description,
-      price,
-      discount,
-      inventory: +inventory,
+    const data: PostArgs = {
+      title,
+      content,
+      body,
+      image: req.file!.filename,
+      authorId: user!.id,
       category,
       type,
       tags,
-      images: originalFileNames,
     };
 
-    const product = await createOneProduct(data);
+    const post = await createOnePost(data);
 
     await cacheQueue.add(
-      "invalidate-product-cache",
+      "invalidate-post-cache",
       {
-        pattern: "products:*",
+        pattern: "posts:*",
       },
       {
         jobId: `invalidate-${Date.now()}`,
@@ -148,10 +143,9 @@ export const createProduct = [
       },
     );
 
-    res.status(201).json({
-      message: "Successfully created a new post.",
-      postId: product.id,
-    });
+    res
+      .status(201)
+      .json({ message: "Successfully created a new post.", postId: post.id });
   },
 ];
 
