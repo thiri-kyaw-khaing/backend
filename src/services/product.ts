@@ -54,6 +54,7 @@ export const createOneProduct = async (data: any) => {
 export const getProductById = async (productId: number) => {
   return await prisma.product.findUnique({
     where: { id: productId },
+    include: { images: true },
   });
 };
 
@@ -83,8 +84,6 @@ export const updateOneProduct = async (productId: number, productData: any) => {
     },
   };
 
-
-
   if (productData.tags && productData.tags.length > 0) {
     data.tags = {
       set: [],
@@ -97,13 +96,12 @@ export const updateOneProduct = async (productId: number, productData: any) => {
     };
   }
 
-    if (data.images && data.images.length > 0) {
+  if (data.images && data.images.length > 0) {
     data.images = {
       deleteMany: {},
       create: data.images,
     };
   }
-
 
   return prisma.product.update({
     where: { id: productId },

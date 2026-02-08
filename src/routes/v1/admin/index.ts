@@ -8,7 +8,10 @@ import {
   deletePost,
   updatePost,
 } from "../../../controllers/admin/postController";
-import { createProduct } from "../../../controllers/admin/productController";
+import {
+  createProduct,
+  deleteProduct,
+} from "../../../controllers/admin/productController";
 const router = express.Router();
 
 router.get("/users", auth, getAllUsers);
@@ -19,6 +22,6 @@ router.delete("/posts", deletePost);
 
 router.post("/products", upload.array("images"), createProduct);
 // router.patch("/products", upload.array("images"), updateProduct);
-// router.delete("/products", deleteProduct);
+router.delete("/products", deleteProduct);
 
 export default router;
