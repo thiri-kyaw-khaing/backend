@@ -1,6 +1,6 @@
 import { PrismaClient } from "../generated/prisma";
 
-export const prisma = new PrismaClient().$extends({
+export const prismaExtend = new PrismaClient().$extends({
   result: {
     user: {
       fullName: {

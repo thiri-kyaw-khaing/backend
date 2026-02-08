@@ -25,31 +25,60 @@ interface CustomRequest extends Request {
   files?: any;
 }
 
+const BASE_UPLOAD_DIR = path.join(__dirname, "../../..", "uploads");
+
 const removeFiles = async (
-  originalFile: string,
+  originalFile: string | null,
   optimizedFile: string | null,
 ) => {
   try {
-    const originalFilePath = path.join(
-      __dirname,
-      "../../..",
-      "/uploads/images",
-      originalFile,
-    );
-    await unlink(originalFilePath);
-    if (optimizedFile) {
-      const optimizedFilePath = path.join(
-        __dirname,
-        "../../..",
-        "/uploads/images",
-        optimizedFile,
+    // ---- ORIGINAL IMAGE (uploads/images) ----
+    if (originalFile) {
+      const originalFileName = path.basename(originalFile);
+
+      const originalPath = path.join(
+        BASE_UPLOAD_DIR,
+        "images",
+        originalFileName,
       );
-      await unlink(optimizedFilePath);
+
+      console.log("Attempting to delete original file:", originalPath);
+
+      try {
+        await unlink(originalPath);
+        console.log("Deleted original file:", originalPath);
+      } catch (err: any) {
+        if (err.code !== "ENOENT") throw err;
+        console.log("Original file not found, skipping:", originalPath);
+      }
+    }
+
+    // ---- OPTIMIZED IMAGE (uploads/optimize) ----
+    if (optimizedFile) {
+      const optimizedFileName = path.basename(optimizedFile);
+
+      const optimizedPath = path.join(
+        BASE_UPLOAD_DIR,
+        "optimize",
+        optimizedFileName,
+      );
+
+      console.log("Attempting to delete optimized file:", optimizedPath);
+
+      try {
+        await unlink(optimizedPath);
+        console.log("Deleted optimized file:", optimizedPath);
+      } catch (err: any) {
+        if (err.code !== "ENOENT") throw err;
+        console.log("Optimized file not found, skipping:", optimizedPath);
+      }
     }
   } catch (error) {
-    console.log(error);
+    console.error("Error deleting files:", error);
   }
 };
+
+console.log("BASE_UPLOAD_DIR:", BASE_UPLOAD_DIR);
 
 export const createPost = [
   body("title", "Title is required.").trim().notEmpty().escape(),
@@ -100,6 +129,9 @@ export const createPost = [
     // }
 
     const splitFileName = req.file?.filename.split(".")[0];
+    console.log("Split file name:", splitFileName);
+    console.log("File path:", req.file?.path);
+    console.log("File name:", req.file?.filename);
 
     await ImageQueue.add(
       "optimize-image",
@@ -145,7 +177,11 @@ export const createPost = [
 
     res
       .status(201)
-      .json({ message: "Successfully created a new post.", postId: post.id });
+      .json({
+        message: "Successfully created a new post.",
+        postId: post.id,
+        imagename: post.image,
+      });
   },
 ];
 
@@ -296,6 +332,16 @@ export const deletePost = [
     //delete post
     const postDeleted = await deleteOnePost(post!.id);
     const optimizedFile = post!.image.split(".")[0] + ".webp";
+    console.log("Post image from database:", post!.image);
+    console.log("Optimized file name:", optimizedFile);
+    console.log(
+      "Full original path:",
+      path.join(BASE_UPLOAD_DIR, "images", post!.image),
+    );
+    console.log(
+      "Full optimized path:",
+      path.join(BASE_UPLOAD_DIR, "optimize", optimizedFile),
+    );
     await removeFiles(post!.image, optimizedFile);
     await cacheQueue.add(
       "invalidate-post-cache",
@@ -308,7 +354,7 @@ export const deletePost = [
       },
     );
     res
-      .status(201)
+      .status(200)
       .json({ message: "Post deleted successfully", postId: postDeleted.id });
   },
 ];

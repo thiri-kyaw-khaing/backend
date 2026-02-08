@@ -2,7 +2,9 @@ import { title } from "process";
 import { PrismaClient } from "../generated/prisma";
 import { connect } from "http2";
 import { create } from "domain";
-import { prisma } from "./prismaClient";
+import { prismaExtend } from "./prismaClient";
+
+const prisma = new PrismaClient();
 
 export type PostArgs = {
   title: string;
@@ -63,7 +65,6 @@ export const updateOnePost = async (postId: number, postData: PostArgs) => {
     content: postData.content,
     body: postData.body,
     category: {
-      set: [],
       connectOrCreate: {
         where: { name: postData.category },
         create: {
@@ -110,7 +111,7 @@ export const deleteOnePost = async (postId: number) => {
 };
 
 export const getPostsWithRelations = async (postId: number) => {
-  return await prisma.post.findUnique({
+  return await prismaExtend.post.findUnique({
     where: { id: postId },
     select: {
       id: true,

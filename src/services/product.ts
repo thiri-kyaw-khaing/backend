@@ -1,4 +1,6 @@
-import { prisma } from "./prismaClient";
+import { prismaExtend } from "./prismaClient";
+import { PrismaClient } from "../generated/prisma";
+const prisma = new PrismaClient();
 export type ProductArgs = {
   title: string;
   content: string;
@@ -48,7 +50,7 @@ export const createOneProduct = async (data: any) => {
       })),
     };
   }
-  return prisma.product.create({ data: productdata });
+  return prismaExtend.product.create({ data: productdata });
 };
 
 export const getProductById = async (productId: number) => {
@@ -103,14 +105,14 @@ export const updateOneProduct = async (productId: number, productData: any) => {
     };
   }
 
-  return prisma.product.update({
+  return prismaExtend.product.update({
     where: { id: productId },
     data,
   });
 };
 
 export const deleteOneProduct = async (id: number) => {
-  return prisma.product.delete({
+  return prismaExtend.product.delete({
     where: { id },
   });
 };

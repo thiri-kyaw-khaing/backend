@@ -22,6 +22,6 @@ router.delete("/posts", deletePost);
 
 router.post("/products", upload.array("images"), createProduct);
 // router.patch("/products", upload.array("images"), updateProduct);
-router.delete("/products", deleteProduct);
+router.delete("/products/", deleteProduct);
 
 export default router;
