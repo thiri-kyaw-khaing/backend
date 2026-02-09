@@ -12,6 +12,7 @@ import {
   getPostsByPagination,
   getInfinitePostsByPagination,
 } from "../../../controllers/api/postController";
+import { getProduct } from "../../../controllers/api/productController";
 const router = express.Router();
 
 router.get("/change-language", changeLanguage);
@@ -31,8 +32,11 @@ router.patch(
   uploadProfileOptimize,
 );
 
-router.get("/posts/:id", auth, getPost);
-router.get("/posts", auth, getPostsByPagination);
-router.get("/post", auth, getInfinitePostsByPagination);
+router.get("/post/:id", auth, getPost);
+router.get("/posts", auth, getPostsByPagination); // OffSet Pagination
+router.get("/post", auth, getInfinitePostsByPagination); // Cursor-based Pagination
+
+router.get("/products/:id", auth, getProduct);
+// router.get("/products", auth, getProductsByPagination);
 
 export default router;

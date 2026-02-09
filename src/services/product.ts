@@ -116,3 +116,23 @@ export const deleteOneProduct = async (id: number) => {
     where: { id },
   });
 };
+
+export const getProductsWithRelations = async (productId: number) => {
+  return await prismaExtend.product.findUnique({
+    where: { id: productId },
+    omit: {
+      categoryId: true,
+      typeId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    include: {
+      images: {
+        select: {
+          id: true,
+          path: true,
+        },
+      },
+    },
+  });
+};
